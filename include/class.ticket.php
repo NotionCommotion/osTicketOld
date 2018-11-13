@@ -3685,8 +3685,9 @@ implements RestrictedAccess, Threadable, JsonSerializable {
         $threads = $this->getThreadEntries(['M', 'R', 'N']);
         $thread_entries = [];
         foreach ($threads as $thread) {
-            $thread_entries[]=$thread;
+            $thread_entries[]=$thread->model;
         }
+        //How should attachments be included in thread?
         return [
             'ticket_number' => $this->getNumber(),
             'subject' => $this->getSubject(),
@@ -3695,18 +3696,23 @@ implements RestrictedAccess, Threadable, JsonSerializable {
             'priority' => $this->getPriority(),
             'department' => $this->getDeptName(),
             'create_timestamp' => $this->getCreateDate(),
-            'user_name' => $this->getName()->getFull(),
-            'user_email' => $this->getEmail(),
-            'user_phone' => $this->getPhoneNumber(),
+            'user' => [
+                'fullname'=>$this->getName()->getFull(),
+                'firstname'=>$this->getName()->getFirst(),
+                'lastname'=>$this->getName()->getLast(),
+                'email'=>$this->getEmail()->address,
+                'phone'=>$this->getPhoneNumber(),
+            ],
             'source' => $this->getSource(),
             'due_timestamp' => $this->getEstDueDate(),
             'close_timestamp' => $this->getCloseDate(),
-            'help_topic' => $this->getHelpTopic(),
+            'topic' => $this->getHelpTopic(),
+            'topicId' => $this->topic_id,
             'last_message_timestamp' => $this->getLastMsgDate(),
             'last_response_timestamp' => $this->getLastRespDate(),
             'assigned_to' => $this->getAssignees(),
-            'thread_entries' =>$a
-         ];
+            'threads' =>$thread_entries
+        ];
     }
 }
 

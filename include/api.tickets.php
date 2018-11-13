@@ -183,16 +183,16 @@ class TicketApiController extends ApiController {
     ######  Added Methods ############
     //Added client methods to support API endpoints.  See https://github.com/osTicket/osTicket/pull/4361/files for staff methods.
     //All methods assume dispatcher validates arguments as integers and handles errors (i.e. (?P<tid>\d+) ).
-    //All methods require client email in the parameters except for getTopics().
+    //All methods require client email in the parameters except for getTopics() and getTicket().  Email is not used for authentication, but to log who made a change.
 
     public function getTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::getTicket($tid) using $format");
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
-        $ticket = $this->getByTicketId($tid, $this->getEmail($format));
+        $ticket = $this->getByTicketId($tid);
         return $this->response(200, json_encode($ticket));
     }
     public function closeTicket(string $format, int $tid):Response {
-        syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
+        //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
         $ticket = $this->getByTicketId($tid, $this->getEmail($format));
         //$ticket->setStatusId(3);
@@ -203,14 +203,14 @@ class TicketApiController extends ApiController {
         return $this->response(204, null);
     }
     public function reopenTicket(string $format, int $tid):Response {
-        syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
+        //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
         $ticket = $this->getByTicketId($tid, $this->getEmail($format));
         $ticket->reopen();
         return $this->response(200, json_encode($ticket));
     }
     public function updateTicket(string $format, int $tid):Response {
-        syslog(LOG_INFO, "TicketApiController::updateTicket($tid) using $format");    //.json_encode($_POST));
+        //syslog(LOG_INFO, "TicketApiController::updateTicket($tid) using $format");    //.json_encode($_POST));
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
         $params = $this->getParams($format);
         $ticket = $this->getByTicketId($tid, $params['email']??false);
@@ -242,24 +242,33 @@ class TicketApiController extends ApiController {
     }
 
     // Private methods to support new api methods.  Verify if existing osticket methods should be used instead.
-    private function getByTicketId(int $ticketId, string $email):Ticket {
+    private function getByTicketId(int $ticketId, string $email=null):Ticket {
         if(!$pk=Ticket::getIdByNumber($ticketId)){
             throw new ApiException('Unknown or invalid ticket ID.', 400);
         }
         return $this->getByPrimaryId($pk, $email);
     }
-    private function getByPrimaryId(int $pk, string $email):Ticket {
-        if(empty($email)) {
-            throw new ApiException('All API requests must pass email as a parameter', 400);
+    private function getByPrimaryId(int $pk, $email):Ticket {
+        if(is_null($email)) {
+            //If null is based for $email, don't verify authority (will be for viewing only).  Maybe change for any GET requests instead?
+            if(!$ticket = Ticket::lookup($pk)) {
+                throw new ApiException('Unknown or invalid ticket ID.', 400);
+            }
         }
-        if(!$user = TicketUser::lookupByEmail($email)) {
-            throw new ApiException('Invalid user', 400);
-        }
-        if(!$ticket = Ticket::lookup($pk)) {
-            throw new ApiException('Unknown or invalid ticket ID.', 400);
-        }
-        if(!$ticket->checkUserAccess($user)) {
-            throw new ApiException('Unknown or invalid ticket ID.', 400); //Using generic message on purpose!
+        else {
+            //$email is not used to authenticate user's access privilage since the api key is used instead, but is used to update who made the change.
+            if(empty($email)) {
+                throw new ApiException('All API requests must pass email as a parameter', 400);
+            }
+            if(!$user = TicketUser::lookupByEmail($email)) {
+                throw new ApiException('Invalid user', 400);
+            }
+            if(!$ticket = Ticket::lookup($pk)) {
+                throw new ApiException('Unknown or invalid ticket ID.', 400);
+            }
+            if(!$ticket->checkUserAccess($user)) {
+                throw new ApiException('Unknown or invalid ticket ID.', 400); //Using generic message on purpose!
+            }
         }
         return $ticket;
     }
@@ -291,7 +300,7 @@ class TicketApiController extends ApiController {
     //The following methods were provided by https://github.com/osTicket/osTicket/pull/4361/commits/781e15b0dd89c205d3999fb844e984b695a36368 and I have not tested
     //Recommend making TicketApiController abstract and adding TicketApiClientController and TicketApiStaffController
 
-    function getTicketInfo() {
+    public function getTicketInfo() {
         try{
             if(!($key=$this->requireApiKey()))
                 return $this->exerr(401, __('API key not authorized'));
@@ -346,8 +355,9 @@ class TicketApiController extends ApiController {
     *
     * TODO: Add filtering support
     *
+    * NOT WORKING?
     */
-    function restGetTickets() {
+    public function restGetTickets() {
         if(!($key=$this->requireApiKey()))
             return $this->exerr(401, __('API key not authorized'));
         # Build query
@@ -381,9 +391,8 @@ class TicketApiController extends ApiController {
         $this->response($result_code, json_encode($tickets), $contentType = "application/json");
     }
     // staff tickets
-    function getStaffTickets()
+    public function getStaffTickets()
     {
-
         try{
             if (! ($key = $this->requireApiKey()))
                 return $this->exerr(401, __('API key not authorized'));
@@ -401,14 +410,10 @@ class TicketApiController extends ApiController {
             ))
             ->all();
 
-
             $tickets = array();
             foreach ($myTickets as $ticket) {
                 array_push($tickets, $ticket);
-
             }
-
-
 
             $result_code = 200;
             $result =  array('tickets'=> $tickets ,'status_code' => '0', 'status_msg' => 'success');
@@ -425,7 +430,7 @@ class TicketApiController extends ApiController {
     }
 
     //client tickets
-    function getClientTickets() {
+    public function getClientTickets() {
         try{
             if(!($key=$this->requireApiKey()))
                 return $this->exerr(401, __('API key not authorized'));
@@ -458,9 +463,8 @@ class TicketApiController extends ApiController {
         }
     }
 
-
     //staff replies to client ticket with the updated status
-    function postReply($format) {
+    public function postReply($format) {
         try{
             if(!($key=$this->requireApiKey()) || !$key->canCreateTickets())
                 return $this->exerr(401, __('API key not authorized'));
@@ -481,7 +485,6 @@ class TicketApiController extends ApiController {
             $errors = array();
             $response = $ticket->postReply($data , $errors);
 
-
             if(!$response)
                 return $this->exerr(500, __("Unable to reply to this ticket: unknown error"));
 
@@ -492,7 +495,6 @@ class TicketApiController extends ApiController {
             $result_code=200;
             $this->response($result_code, json_encode($result ),
                 $contentType="application/json");
-
         }
         catch ( Throwable $e){
             $msg = $e-> getMessage();
@@ -501,7 +503,6 @@ class TicketApiController extends ApiController {
                 $contentType="application/json");
         }
     }
-
 }
 
 //Local email piping controller - no API key required!

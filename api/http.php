@@ -28,21 +28,21 @@ $dispatcher = patterns('',
         )),
 
         //I added the following endpoints.
-        url_get("^/tickets.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','getTicket')),  //Do first!
-        url_get("^/tickets.(?P<format>xml|json|email)", array('api.tickets.php:TicketApiController','getTickets')),
-        url_post("^/tickets.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','reopenTicket')),
-        url_put("^/tickets.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','updateTicket')),
-        url_delete("^/tickets.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','closeTicket')),
-        url_get("^/topics.(?P<format>xml|json|email)", array('api.tickets.php:TicketApiController','getTopics')),
+        url_get("^/tickets\.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','getTicket')),  //Do first!
+        url_get("^/tickets\.(?P<format>xml|json|email)", array('api.tickets.php:TicketApiController','getTickets')),
+        url_post("^/tickets\.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','reopenTicket')),
+        url_put("^/tickets\.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','updateTicket')),
+        url_delete("^/tickets\.(?P<format>xml|json|email)/(?P<tid>\d+)$", array('api.tickets.php:TicketApiController','closeTicket')),
+        url_get("^/topics\.(?P<format>xml|json|email)", array('api.tickets.php:TicketApiController','getTopics')),
         url_post("^/tickets/reply\.(?P<format>json)$", array('api.tickets.php:TicketApiController','postReply')),
 
         // The following were added by https://github.com/osTicket/osTicket/pull/4361/commits/781e15b0dd89c205d3999fb844e984b695a36368
         // I have not extensively tested them, and only changed the endpoint url by adding "scp" as well as the format extention
-        url_get("^/scp/tickets.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','restGetTickets')),
-        url_get("^/scp/tickets/ticketInfo.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','getTicketInfo')),
-        url_get("^/scp/tickets/staffTickets.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','getStaffTickets')),
-        url_get("^/scp/tickets/clientTickets.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','getClientTickets')),
-        url_post("^/scp/tickets/reply.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','postReply'))
+        url_get("^/scp/tickets\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','restGetTickets')),
+        url_get("^/scp/tickets/ticketInfo\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','getTicketInfo')),
+        url_get("^/scp/tickets/staffTickets\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','getStaffTickets')),
+        url_get("^/scp/tickets/clientTickets\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','getClientTickets')),
+        url_post("^/scp/tickets/reply\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','postReply'))
 );
 
 Signal::send('api', $dispatcher);

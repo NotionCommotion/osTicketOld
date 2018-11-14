@@ -1,20 +1,21 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <head>
         <meta charset="UTF-8">
         <title>OS Ticket API tester</title>
     </head>
     <body>
         <div>
-            <p>view console.log</p>
+            <div id='output'></div>
         </div>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <script type="text/javascript">
+        <script>
             $(function() {
 
+                var output=$('#output');
                 function logResults(status, test, method, url, data, rsp){
                     //console.log(status, test, method, url, data, rsp)
-                    console.log(method+' '+url+' :'+JSON.stringify(data)+' response:\n'+JSON.stringify(rsp));
+                    output.append('<h4>'+test+'</h4><p>'+method+' '+url+'</p><p>params:</p><pre><code>'+JSON.stringify(data, null, 2)+'</code></pre><p>Status: '+status+'</p><p>Response:</p><pre><code>'+JSON.stringify(rsp, null, 2)+'</code></pre><br>');
                 }
 
                 function testApi(stack, api) {
@@ -37,10 +38,11 @@
                         }
                     });
                 }
-                var email='theodog.test@gmail.com';
-                var staffUserName='Michael';
-                var ticketId=896164;
-                var api='D605900B7C1AC09BB600700F31D8E339';
+                var email='theodog.test@gmail.com',
+                user_id=5,
+                staffUserName='Michael',
+                ticketId=508809,
+                api='D605900B7C1AC09BB600700F31D8E339';
 
                 var postData1={
                     "email": "api@osticket.com",
@@ -87,6 +89,7 @@
 
                 var stack=[
                     //my endpoints (accessed by end user)
+                    {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {user_id: user_id}},
                     {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {email: email}},
                     {test: 'getTopics', method: 'GET', url: '/api/topics.json', data: {}},
                     {test: 'getTicket', method: 'GET', url: '/api/tickets.json/'+ticketId, data: {}},

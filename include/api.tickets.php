@@ -187,6 +187,7 @@ class TicketApiController extends ApiController {
 
     public function getTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::getTicket($tid) using $format");
+        //This API request does not need to provide user identifier.
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
         $ticket = $this->getByTicketId($tid);
         return $this->response(200, json_encode($ticket));
@@ -194,7 +195,7 @@ class TicketApiController extends ApiController {
     public function closeTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
-        $ticket = $this->getByTicketId($tid, $this->getEmail($format));
+        $ticket = $this->getByTicketId($tid, $this->getUser($format));
         //$ticket->setStatusId(3);
         //$currentStatus=$ticket->getStatus();
         $status= TicketStatus::lookup(3);
@@ -205,7 +206,7 @@ class TicketApiController extends ApiController {
     public function reopenTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
-        $ticket = $this->getByTicketId($tid, $this->getEmail($format));
+        $ticket = $this->getByTicketId($tid, $this->getUser($format));
         $ticket->reopen();
         return $this->response(200, json_encode($ticket));
     }
@@ -213,7 +214,7 @@ class TicketApiController extends ApiController {
         //syslog(LOG_INFO, "TicketApiController::updateTicket($tid) using $format");    //.json_encode($_POST));
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
         $params = $this->getParams($format);
-        $ticket = $this->getByTicketId($tid, $params['email']??false);
+        $ticket = $this->getByTicketId($tid, $this->getUser($format, $params));
         $vars=[
             'message'=>$params['message']->getClean(),
             'files'=>[],    //How should this be implemented?
@@ -227,60 +228,36 @@ class TicketApiController extends ApiController {
         //Future:  Allow for optional filtering for name and topic ID
         //syslog(LOG_INFO, "TicketApiController::getTickets() using $format");
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
-        if(!$user = TicketUser::lookupByEmail($this->getEmail($format))) {
-            return $this->exerr(400, __('Invalid user'));
-        }
-        $tickets = Ticket::objects()->filter(array('user_id' => $user->getId()))->all();
-        return $this->response(200, json_encode($this->createList($tickets, 'id', 'value')));
+        $tickets = Ticket::objects()->filter(array('user_id' => $this->getUser($format)->getId()))->all();
+        return $this->response(200, json_encode($tickets));
     }
     public function getTopics(string $format):Response {
         //syslog(LOG_INFO, "TicketApiController::getTopics() using $format");
-        //The one exception where client email is not required.
+        //This API request does not need to provide user identifier.
         $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
-        $topics=Topic::getPublicHelpTopics();
-        return $this->response(200, json_encode($this->createList($topics, 'id', 'value')));
+        return $this->response(200, json_encode($this->createList(Topic::getPublicHelpTopics(), 'id', 'value')));
     }
 
     // Private methods to support new api methods.  Verify if existing osticket methods should be used instead.
-    private function getByTicketId(int $ticketId, string $email=null):Ticket {
+    private function getByTicketId(int $ticketId, $user=null):Ticket {
+        //Only pass $user if authentication is desired
         if(!$pk=Ticket::getIdByNumber($ticketId)){
             throw new ApiException('Unknown or invalid ticket ID.', 400);
         }
-        return $this->getByPrimaryId($pk, $email);
+        return $this->getByPrimaryId($pk, $user);
     }
-    private function getByPrimaryId(int $pk, $email):Ticket {
-        if(is_null($email)) {
-            //If null is based for $email, don't verify authority (will be for viewing only).  Maybe change for any GET requests instead?
-            if(!$ticket = Ticket::lookup($pk)) {
-                throw new ApiException('Unknown or invalid ticket ID.', 400);
-            }
+    private function getByPrimaryId(int $pk, $user=null):Ticket {
+        //Only pass $user if authentication is desired
+        if(!$ticket = Ticket::lookup($pk)) {
+            throw new ApiException('Unknown or invalid ticket ID.', 400);
         }
-        else {
-            //$email is not used to authenticate user's access privilage since the api key is used instead, but is used to update who made the change.
-            if(empty($email)) {
-                throw new ApiException('All API requests must pass email as a parameter', 400);
-            }
-            if(!$user = TicketUser::lookupByEmail($email)) {
-                throw new ApiException('Invalid user', 400);
-            }
-            if(!$ticket = Ticket::lookup($pk)) {
-                throw new ApiException('Unknown or invalid ticket ID.', 400);
-            }
-            if(!$ticket->checkUserAccess($user)) {
-                throw new ApiException('Unknown or invalid ticket ID.', 400); //Using generic message on purpose!
-            }
+        if($user && !$ticket->checkUserAccess($user)) {
+            throw new ApiException('Unknown or invalid ticket ID.', 400); //Using generic message on purpose!
         }
         return $ticket;
     }
-    private function getEmail(string $format):string {
-        $params=$this->getParams($format);
-        if(empty($params['email'])){
-            throw new ApiException('Missing value for email.', 400);
-        }
-        return $params['email'];
-    }
     private function getParams(string $format):array {
-        return in_array($_SERVER['REQUEST_METHOD'], ['GET'])?$_GET:$this->getRequest($format);
+        return $_SERVER['REQUEST_METHOD']==='GET'?$_GET:$this->getRequest($format);
     }
     private function getApi($create=false):API {
         if(!($api=$this->requireApiKey()) || $create && !$api->canCreateTickets()) {
@@ -294,6 +271,25 @@ class TicketApiController extends ApiController {
             $list[]=[$idName=>$key, $valueName=>$value];
         }
         return $list;
+    }
+    private function getUser(string $format, array $params=[]):EndUser {
+        //user_id or email must be provided in request parameters
+        $params=$params?$params:$this->getParams($format);
+        $user = TicketUser::lookupByEmail('theodog.test@gmail.com');
+        if(!empty($params['user_id'])){
+            if(!$user = TicketUser::lookupById($params['user_id'])) {
+                throw new ApiException('Invalid user.', 400);
+            }
+        }
+        elseif(!empty($params['email'])){
+            if(!$user = TicketUser::lookupByEmail($params['email'])) {
+                throw new ApiException('Invalid user.', 400);
+            }
+        }
+        else {
+            throw new ApiException('Either user_id or email must be provided in request.', 400);
+        }
+        return $user;
     }
 
 

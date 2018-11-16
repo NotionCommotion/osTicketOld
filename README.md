@@ -45,7 +45,6 @@ class DbSessionBackend extends SessionBackend {
 ## TODO:
 1. Confirm that posting a reply to an existing ticket with attachments work.
 2. Figure out how to include attachments when retrieving ticket.
-3. Add API to add client user.
 4. Clean up threads.
 5. Changes to allow specific user name to be logged as making changes instead of "SYSTEM".
 6. Better utilize exising osTicket methods where applicable.
@@ -58,2204 +57,1706 @@ class DbSessionBackend extends SessionBackend {
 
 ## Usage
 
-Perform curl requests
+Perform curl requests as shown.
+All ticket methods which change the database require either the user's email (email) or id (user_id).  Only adding a new ticket uses this information to directly insert into the database and the other's use it just to log who made the change.
 
 ```
-GET /api/tickets.json: {
-    "email": "theodog.test@gmail.com"
-}
-response:
-[{
-        "id": 0,
-        "value": {
-            "ticket_number": "896164",
-            "subject": "A new ticket",
-            "ticket_status": "Open",
-            "statusId": 1,
-            "priority": "Low",
-            "department": "Support",
-            "create_timestamp": "2018-11-13 13:34:25",
-            "user": {
-                "fullname": "Michael User2",
-                "firstname": "Michael",
-                "lastname": "User2",
-                "email": "theodog.test@gmail.com",
-                "phone": ""
-            },
-            "source": "Web",
-            "due_timestamp": "2018-11-15 13:34:25",
-            "close_timestamp": "2018-11-13 13:50:32",
-            "topic": "Feedback",
-            "topicId": 2,
-            "last_message_timestamp": "2018-11-13 13:50:33",
-            "last_response_timestamp": "2018-11-13 13:50:35",
-            "assigned_to": [{
-                    "format": "full",
-                    "parts": {
-                        "first": "Michael",
-                        "last": "Reed"
-                    },
-                    "name": "Michael Reed"
-                }
-            ],
-            "threads": [{
-                    "id": 96,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is my original new ticket.",
-                    "message": {
-                        "body": "This is my original new ticket.",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:34:25",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }, {
-                    "id": 97,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                    "message": {
-                        "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:34:45",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }, {
-                    "id": 98,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": 1,
-                    "user_id": null,
-                    "type": "R",
-                    "poster": "Michael Reed",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                    "message": {
-                        "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:47:47",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": {
-                        "format": "full",
-                        "parts": {
-                            "first": "Michael",
-                            "last": "Reed"
-                        },
-                        "name": "Michael Reed"
-                    },
-                    "user_name": null
-                }, {
-                    "id": 99,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "N",
-                    "poster": "SYSTEM",
-                    "editor": null,
-                    "source": "",
-                    "title": "Status Changed",
-                    "body": "Closed by user",
-                    "message": {
-                        "body": "Closed by user",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:32",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 100,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "M",
-                    "poster": "",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "My updated message",
-                    "message": {
-                        "body": "My updated message",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:33",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 102,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": 1,
-                    "user_id": null,
-                    "type": "R",
-                    "poster": "Michael Reed",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "ticket issue is resolved !",
-                    "message": {
-                        "body": "ticket issue is resolved !",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:35",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": {
-                        "format": "full",
-                        "parts": {
-                            "first": "Michael",
-                            "last": "Reed"
-                        },
-                        "name": "Michael Reed"
-                    },
-                    "user_name": null
-                }
-            ]
-        }
-    }, {
-        "id": 1,
-        "value": {
-            "ticket_number": "542343",
-            "subject": "Testing API",
-            "ticket_status": "Open",
-            "statusId": 1,
-            "priority": "Low",
-            "department": "Support",
-            "create_timestamp": "2018-11-13 13:50:33",
-            "user": {
-                "fullname": "Michael User2",
-                "firstname": "Michael",
-                "lastname": "User2",
-                "email": "theodog.test@gmail.com",
-                "phone": ""
-            },
-            "source": "API",
-            "due_timestamp": "2018-11-15 13:50:33",
-            "close_timestamp": null,
-            "topic": "Feedback",
-            "topicId": 2,
-            "last_message_timestamp": "2018-11-13 13:50:33",
-            "last_response_timestamp": null,
-            "assigned_to": [],
-            "threads": [{
-                    "id": 101,
-                    "pid": 0,
-                    "thread_id": 47,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "API",
-                    "title": "Testing API",
-                    "body": "My original message",
-                    "message": {
-                        "body": "My original message",
-                        "type": "text",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": true
-                        }
-                    },
-                    "format": "text",
-                    "created": "2018-11-13 13:50:33",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }
-            ]
-        }
-    }
-]
+getTickets
+GET /api/tickets.json
 
-GET /api/topics.json: {}
-response:
-[{
-        "id": 2,
-        "value": "Feedback"
-    }, {
-        "id": 1,
-        "value": "General Inquiry"
-    }, {
-        "id": 10,
-        "value": "Report a Problem"
-    }, {
-        "id": 11,
-        "value": "Report a Problem/Access Issue"
-    }
-]
+params:
 
-GET /api/tickets.json/896164: {}
-response: {
-    "ticket_number": "896164",
-    "subject": "A new ticket",
-    "ticket_status": "Open",
-    "statusId": 1,
-    "priority": "Low",
-    "department": "Support",
-    "create_timestamp": "2018-11-13 13:34:25",
-    "user": {
-        "fullname": "Michael User2",
-        "firstname": "Michael",
-        "lastname": "User2",
-        "email": "theodog.test@gmail.com",
-        "phone": ""
-    },
-    "source": "Web",
-    "due_timestamp": "2018-11-15 13:34:25",
-    "close_timestamp": "2018-11-13 13:50:32",
-    "topic": "Feedback",
-    "topicId": 2,
-    "last_message_timestamp": "2018-11-13 13:50:33",
-    "last_response_timestamp": "2018-11-13 13:50:35",
-    "assigned_to": [{
-            "format": "full",
-            "parts": {
-                "first": "Michael",
-                "last": "Reed"
-            },
-            "name": "Michael Reed"
-        }
-    ],
-    "threads": [{
-            "id": 96,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is my original new ticket.",
-            "message": {
-                "body": "This is my original new ticket.",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:34:25",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }, {
-            "id": 97,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is a response by the user to the new ticket.<br /><br /> ",
-            "message": {
-                "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:34:45",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }, {
-            "id": 98,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": 1,
-            "user_id": null,
-            "type": "R",
-            "poster": "Michael Reed",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-            "message": {
-                "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:47:47",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": {
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            },
-            "user_name": null
-        }, {
-            "id": 99,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "N",
-            "poster": "SYSTEM",
-            "editor": null,
-            "source": "",
-            "title": "Status Changed",
-            "body": "Closed by user",
-            "message": {
-                "body": "Closed by user",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:32",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 100,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "M",
-            "poster": "",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "My updated message",
-            "message": {
-                "body": "My updated message",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:33",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 102,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": 1,
-            "user_id": null,
-            "type": "R",
-            "poster": "Michael Reed",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "ticket issue is resolved !",
-            "message": {
-                "body": "ticket issue is resolved !",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:35",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": {
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            },
-            "user_name": null
-        }
-    ]
+{
+  "user_id": 5
 }
+Status: success
 
-DELETE /api/tickets.json/896164: {
-    "email": "theodog.test@gmail.com"
-}
-response:
-undefined
+Response:
 
-POST /api/tickets.json/896164: {
-    "email": "theodog.test@gmail.com"
-}
-response: {
-    "ticket_number": "896164",
-    "subject": "A new ticket",
-    "ticket_status": "Open",
-    "statusId": 1,
-    "priority": "Low",
-    "department": "Support",
-    "create_timestamp": "2018-11-13 13:34:25",
-    "user": {
-        "fullname": "Michael User2",
-        "firstname": "Michael",
-        "lastname": "User2",
-        "email": "theodog.test@gmail.com",
-        "phone": ""
-    },
-    "source": "Web",
-    "due_timestamp": "2018-11-15 13:34:25",
-    "close_timestamp": "2018-11-13 14:03:19",
-    "topic": "Feedback",
-    "topicId": 2,
-    "last_message_timestamp": "2018-11-13 13:50:33",
-    "last_response_timestamp": "2018-11-13 13:50:35",
-    "assigned_to": [{
-            "format": "full",
-            "parts": {
-                "first": "Michael",
-                "last": "Reed"
-            },
-            "name": "Michael Reed"
-        }
-    ],
-    "threads": [{
-            "id": 96,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is my original new ticket.",
-            "message": {
-                "body": "This is my original new ticket.",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:34:25",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }, {
-            "id": 97,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is a response by the user to the new ticket.<br /><br /> ",
-            "message": {
-                "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:34:45",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }, {
-            "id": 98,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": 1,
-            "user_id": null,
-            "type": "R",
-            "poster": "Michael Reed",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-            "message": {
-                "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:47:47",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": {
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            },
-            "user_name": null
-        }, {
-            "id": 99,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "N",
-            "poster": "SYSTEM",
-            "editor": null,
-            "source": "",
-            "title": "Status Changed",
-            "body": "Closed by user",
-            "message": {
-                "body": "Closed by user",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:32",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 100,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "M",
-            "poster": "",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "My updated message",
-            "message": {
-                "body": "My updated message",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:33",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 102,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": 1,
-            "user_id": null,
-            "type": "R",
-            "poster": "Michael Reed",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "ticket issue is resolved !",
-            "message": {
-                "body": "ticket issue is resolved !",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:35",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": {
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            },
-            "user_name": null
-        }, {
-            "id": 103,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "N",
-            "poster": "SYSTEM",
-            "editor": null,
-            "source": "",
-            "title": "Status Changed",
-            "body": "Closed by user",
-            "message": {
-                "body": "Closed by user",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 14:03:19",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }
-    ]
-}
-
-PUT /api/tickets.json/896164: {
-    "email": "theodog.test@gmail.com",
-    "message": "My updated message"
-}
-response: {
-    "ticket_number": "896164",
-    "subject": "A new ticket",
-    "ticket_status": "Open",
-    "statusId": 1,
-    "priority": "Low",
-    "department": "Support",
-    "create_timestamp": "2018-11-13 13:34:25",
-    "user": {
-        "fullname": "Michael User2",
-        "firstname": "Michael",
-        "lastname": "User2",
-        "email": "theodog.test@gmail.com",
-        "phone": ""
-    },
-    "source": "Web",
-    "due_timestamp": "2018-11-15 13:34:25",
-    "close_timestamp": "2018-11-13 14:03:19",
-    "topic": "Feedback",
-    "topicId": 2,
-    "last_message_timestamp": "2018-11-13 14:03:20",
-    "last_response_timestamp": "2018-11-13 13:50:35",
-    "assigned_to": [{
-            "format": "full",
-            "parts": {
-                "first": "Michael",
-                "last": "Reed"
-            },
-            "name": "Michael Reed"
-        }
-    ],
-    "threads": [{
-            "id": 96,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is my original new ticket.",
-            "message": {
-                "body": "This is my original new ticket.",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:34:25",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }, {
-            "id": 97,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is a response by the user to the new ticket.<br /><br /> ",
-            "message": {
-                "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:34:45",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }, {
-            "id": 98,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": 1,
-            "user_id": null,
-            "type": "R",
-            "poster": "Michael Reed",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-            "message": {
-                "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:47:47",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": {
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            },
-            "user_name": null
-        }, {
-            "id": 99,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "N",
-            "poster": "SYSTEM",
-            "editor": null,
-            "source": "",
-            "title": "Status Changed",
-            "body": "Closed by user",
-            "message": {
-                "body": "Closed by user",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:32",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 100,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "M",
-            "poster": "",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "My updated message",
-            "message": {
-                "body": "My updated message",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:33",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 102,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": 1,
-            "user_id": null,
-            "type": "R",
-            "poster": "Michael Reed",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "ticket issue is resolved !",
-            "message": {
-                "body": "ticket issue is resolved !",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 13:50:35",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": {
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            },
-            "user_name": null
-        }, {
-            "id": 103,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "N",
-            "poster": "SYSTEM",
-            "editor": null,
-            "source": "",
-            "title": "Status Changed",
-            "body": "Closed by user",
-            "message": {
-                "body": "Closed by user",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 14:03:19",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }, {
-            "id": 104,
-            "pid": 0,
-            "thread_id": 46,
-            "staff_id": null,
-            "user_id": null,
-            "type": "M",
-            "poster": "",
-            "editor": null,
-            "source": "",
-            "title": null,
-            "body": "My updated message",
-            "message": {
-                "body": "My updated message",
-                "type": "html",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": false,
-                    "balanced": true
-                }
-            },
-            "format": "html",
-            "created": "2018-11-13 14:03:20",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": null
-        }
-    ]
-}
-
-POST /api/tickets.json: {
-    "email": "theodog.test@gmail.com",
-    "message": "My original message",
-    "name": "John Doe",
-    "subject": "Testing API",
-    "topicId": 2
-}
-response: {
-    "ticket_number": "407896",
+[
+  {
+    "ticket_number": "112356",
     "subject": "Testing API",
     "ticket_status": "Open",
     "statusId": 1,
     "priority": "Low",
     "department": "Support",
-    "create_timestamp": "2018-11-13 14:03:20",
+    "create_timestamp": "2018-11-16 13:21:53",
     "user": {
-        "fullname": "Michael User2",
-        "firstname": "Michael",
-        "lastname": "User2",
-        "email": "theodog.test@gmail.com",
-        "phone": ""
+      "fullname": "Michael User2",
+      "firstname": "Michael",
+      "lastname": "User2",
+      "email": "theodog.test@gmail.com",
+      "phone": ""
     },
     "source": "API",
-    "due_timestamp": "2018-11-15 14:03:20",
+    "due_timestamp": "2018-11-18 13:21:53",
     "close_timestamp": null,
     "topic": "Feedback",
     "topicId": 2,
-    "last_message_timestamp": "2018-11-13 14:03:20",
+    "last_message_timestamp": "2018-11-16 13:21:53",
     "last_response_timestamp": null,
     "assigned_to": [],
-    "threads": [{
-            "id": 105,
-            "pid": 0,
-            "thread_id": 48,
-            "staff_id": null,
-            "user_id": 5,
-            "type": "M",
-            "poster": "Michael User2",
-            "editor": null,
-            "source": "API",
-            "title": "Testing API",
-            "body": "My original message",
-            "message": {
-                "body": "My original message",
-                "type": "text",
-                "stripped_images": [],
-                "embedded_images": [],
-                "options": {
-                    "strip-embedded": true
-                }
-            },
-            "format": "text",
-            "created": "2018-11-13 14:03:20",
-            "updated": "0000-00-00 00:00:00",
-            "staff_name": null,
-            "user_name": {
-                "format": "original",
-                "parts": {
-                    "salutation": "",
-                    "first": "Michael",
-                    "suffix": "",
-                    "last": "User2",
-                    "middle": ""
-                },
-                "name": "Michael User2"
-            }
-        }
-    ]
-}
-
-GET /api/scp/tickets/ticketInfo.json: {
-    "ticketNumber": 896164
-}
-response: {
-    "ticket": {
-        "ticket_number": "896164",
-        "subject": "A new ticket",
-        "ticket_status": "Open",
-        "statusId": 1,
-        "priority": "Low",
-        "department": "Support",
-        "create_timestamp": "2018-11-13 13:34:25",
-        "user": {
-            "fullname": "Michael User2",
-            "firstname": "Michael",
-            "lastname": "User2",
-            "email": "theodog.test@gmail.com",
-            "phone": ""
+    "threads": [
+      {
+        "id": 278,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": 5,
+        "type": "M",
+        "poster": "Michael User2",
+        "editor": null,
+        "source": "API",
+        "title": "Testing API",
+        "body": "My original message",
+        "message": {
+          "body": "My original message",
+          "type": "text",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": true
+          }
         },
-        "source": "Web",
-        "due_timestamp": "2018-11-15 13:34:25",
-        "close_timestamp": "2018-11-13 14:03:19",
-        "topic": "Feedback",
-        "topicId": 2,
-        "last_message_timestamp": "2018-11-13 14:03:20",
-        "last_response_timestamp": "2018-11-13 13:50:35",
-        "assigned_to": [{
-                "format": "full",
-                "parts": {
-                    "first": "Michael",
-                    "last": "Reed"
-                },
-                "name": "Michael Reed"
-            }
-        ],
-        "threads": [{
-                "id": 96,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": null,
-                "user_id": 5,
-                "type": "M",
-                "poster": "Michael User2",
-                "editor": null,
-                "source": "",
-                "title": null,
-                "body": "This is my original new ticket.",
-                "message": {
-                    "body": "This is my original new ticket.",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 13:34:25",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": null,
-                "user_name": {
-                    "format": "original",
-                    "parts": {
-                        "salutation": "",
-                        "first": "Michael",
-                        "suffix": "",
-                        "last": "User2",
-                        "middle": ""
-                    },
-                    "name": "Michael User2"
-                }
-            }, {
-                "id": 97,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": null,
-                "user_id": 5,
-                "type": "M",
-                "poster": "Michael User2",
-                "editor": null,
-                "source": "",
-                "title": null,
-                "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                "message": {
-                    "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 13:34:45",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": null,
-                "user_name": {
-                    "format": "original",
-                    "parts": {
-                        "salutation": "",
-                        "first": "Michael",
-                        "suffix": "",
-                        "last": "User2",
-                        "middle": ""
-                    },
-                    "name": "Michael User2"
-                }
-            }, {
-                "id": 98,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": 1,
-                "user_id": null,
-                "type": "R",
-                "poster": "Michael Reed",
-                "editor": null,
-                "source": "",
-                "title": null,
-                "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                "message": {
-                    "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 13:47:47",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": {
-                    "format": "full",
-                    "parts": {
-                        "first": "Michael",
-                        "last": "Reed"
-                    },
-                    "name": "Michael Reed"
-                },
-                "user_name": null
-            }, {
-                "id": 99,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": null,
-                "user_id": null,
-                "type": "N",
-                "poster": "SYSTEM",
-                "editor": null,
-                "source": "",
-                "title": "Status Changed",
-                "body": "Closed by user",
-                "message": {
-                    "body": "Closed by user",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 13:50:32",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": null,
-                "user_name": null
-            }, {
-                "id": 100,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": null,
-                "user_id": null,
-                "type": "M",
-                "poster": "",
-                "editor": null,
-                "source": "",
-                "title": null,
-                "body": "My updated message",
-                "message": {
-                    "body": "My updated message",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 13:50:33",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": null,
-                "user_name": null
-            }, {
-                "id": 102,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": 1,
-                "user_id": null,
-                "type": "R",
-                "poster": "Michael Reed",
-                "editor": null,
-                "source": "",
-                "title": null,
-                "body": "ticket issue is resolved !",
-                "message": {
-                    "body": "ticket issue is resolved !",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 13:50:35",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": {
-                    "format": "full",
-                    "parts": {
-                        "first": "Michael",
-                        "last": "Reed"
-                    },
-                    "name": "Michael Reed"
-                },
-                "user_name": null
-            }, {
-                "id": 103,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": null,
-                "user_id": null,
-                "type": "N",
-                "poster": "SYSTEM",
-                "editor": null,
-                "source": "",
-                "title": "Status Changed",
-                "body": "Closed by user",
-                "message": {
-                    "body": "Closed by user",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 14:03:19",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": null,
-                "user_name": null
-            }, {
-                "id": 104,
-                "pid": 0,
-                "thread_id": 46,
-                "staff_id": null,
-                "user_id": null,
-                "type": "M",
-                "poster": "",
-                "editor": null,
-                "source": "",
-                "title": null,
-                "body": "My updated message",
-                "message": {
-                    "body": "My updated message",
-                    "type": "html",
-                    "stripped_images": [],
-                    "embedded_images": [],
-                    "options": {
-                        "strip-embedded": false,
-                        "balanced": true
-                    }
-                },
-                "format": "html",
-                "created": "2018-11-13 14:03:20",
-                "updated": "0000-00-00 00:00:00",
-                "staff_name": null,
-                "user_name": null
-            }
-        ]
+        "format": "text",
+        "created": "2018-11-16 13:21:53",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": {
+          "format": "original",
+          "parts": {
+            "salutation": "",
+            "first": "Michael",
+            "suffix": "",
+            "last": "User2",
+            "middle": ""
+          },
+          "name": "Michael User2"
+        }
+      }
+    ]
+  }
+]
+
+getTickets
+GET /api/tickets.json
+
+params:
+
+{
+  "email": "theodog.test@gmail.com"
+}
+Status: success
+
+Response:
+
+[
+  {
+    "ticket_number": "112356",
+    "subject": "Testing API",
+    "ticket_status": "Open",
+    "statusId": 1,
+    "priority": "Low",
+    "department": "Support",
+    "create_timestamp": "2018-11-16 13:21:53",
+    "user": {
+      "fullname": "Michael User2",
+      "firstname": "Michael",
+      "lastname": "User2",
+      "email": "theodog.test@gmail.com",
+      "phone": ""
     },
-    "status_code": "0",
-    "status_msg": "ticket details retrieved successfully"
-}
-
-GET /api/scp/tickets/staffTickets.json: {
-    "staffUserName": "Michael"
-}
-response: {
-    "tickets": [{
-            "ticket_number": "896164",
-            "subject": "A new ticket",
-            "ticket_status": "Open",
-            "statusId": 1,
-            "priority": "Low",
-            "department": "Support",
-            "create_timestamp": "2018-11-13 13:34:25",
-            "user": {
-                "fullname": "Michael User2",
-                "firstname": "Michael",
-                "lastname": "User2",
-                "email": "theodog.test@gmail.com",
-                "phone": ""
-            },
-            "source": "Web",
-            "due_timestamp": "2018-11-15 13:34:25",
-            "close_timestamp": "2018-11-13 14:03:19",
-            "topic": "Feedback",
-            "topicId": 2,
-            "last_message_timestamp": "2018-11-13 14:03:20",
-            "last_response_timestamp": "2018-11-13 13:50:35",
-            "assigned_to": [{
-                    "format": "full",
-                    "parts": {
-                        "first": "Michael",
-                        "last": "Reed"
-                    },
-                    "name": "Michael Reed"
-                }
-            ],
-            "threads": [{
-                    "id": 96,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is my original new ticket.",
-                    "message": {
-                        "body": "This is my original new ticket.",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:34:25",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }, {
-                    "id": 97,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                    "message": {
-                        "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:34:45",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }, {
-                    "id": 98,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": 1,
-                    "user_id": null,
-                    "type": "R",
-                    "poster": "Michael Reed",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                    "message": {
-                        "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:47:47",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": {
-                        "format": "full",
-                        "parts": {
-                            "first": "Michael",
-                            "last": "Reed"
-                        },
-                        "name": "Michael Reed"
-                    },
-                    "user_name": null
-                }, {
-                    "id": 99,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "N",
-                    "poster": "SYSTEM",
-                    "editor": null,
-                    "source": "",
-                    "title": "Status Changed",
-                    "body": "Closed by user",
-                    "message": {
-                        "body": "Closed by user",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:32",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 100,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "M",
-                    "poster": "",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "My updated message",
-                    "message": {
-                        "body": "My updated message",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:33",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 102,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": 1,
-                    "user_id": null,
-                    "type": "R",
-                    "poster": "Michael Reed",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "ticket issue is resolved !",
-                    "message": {
-                        "body": "ticket issue is resolved !",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:35",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": {
-                        "format": "full",
-                        "parts": {
-                            "first": "Michael",
-                            "last": "Reed"
-                        },
-                        "name": "Michael Reed"
-                    },
-                    "user_name": null
-                }, {
-                    "id": 103,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "N",
-                    "poster": "SYSTEM",
-                    "editor": null,
-                    "source": "",
-                    "title": "Status Changed",
-                    "body": "Closed by user",
-                    "message": {
-                        "body": "Closed by user",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 14:03:19",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 104,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "M",
-                    "poster": "",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "My updated message",
-                    "message": {
-                        "body": "My updated message",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 14:03:20",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }
-            ]
+    "source": "API",
+    "due_timestamp": "2018-11-18 13:21:53",
+    "close_timestamp": null,
+    "topic": "Feedback",
+    "topicId": 2,
+    "last_message_timestamp": "2018-11-16 13:21:53",
+    "last_response_timestamp": null,
+    "assigned_to": [],
+    "threads": [
+      {
+        "id": 278,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": 5,
+        "type": "M",
+        "poster": "Michael User2",
+        "editor": null,
+        "source": "API",
+        "title": "Testing API",
+        "body": "My original message",
+        "message": {
+          "body": "My original message",
+          "type": "text",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": true
+          }
+        },
+        "format": "text",
+        "created": "2018-11-16 13:21:53",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": {
+          "format": "original",
+          "parts": {
+            "salutation": "",
+            "first": "Michael",
+            "suffix": "",
+            "last": "User2",
+            "middle": ""
+          },
+          "name": "Michael User2"
         }
-    ],
-    "status_code": "0",
-    "status_msg": "success"
-}
+      }
+    ]
+  }
+]
 
-GET /api/scp/tickets/clientTickets.json: {
-    "clientUserMail": "theodog.test@gmail.com"
-}
-response: {
-    "tickets": [{
-            "ticket_number": "896164",
-            "subject": "A new ticket",
-            "ticket_status": "Open",
-            "statusId": 1,
-            "priority": "Low",
-            "department": "Support",
-            "create_timestamp": "2018-11-13 13:34:25",
-            "user": {
-                "fullname": "Michael User2",
-                "firstname": "Michael",
-                "lastname": "User2",
-                "email": "theodog.test@gmail.com",
-                "phone": ""
-            },
-            "source": "Web",
-            "due_timestamp": "2018-11-15 13:34:25",
-            "close_timestamp": "2018-11-13 14:03:19",
-            "topic": "Feedback",
-            "topicId": 2,
-            "last_message_timestamp": "2018-11-13 14:03:20",
-            "last_response_timestamp": "2018-11-13 13:50:35",
-            "assigned_to": [{
-                    "format": "full",
-                    "parts": {
-                        "first": "Michael",
-                        "last": "Reed"
-                    },
-                    "name": "Michael Reed"
-                }
-            ],
-            "threads": [{
-                    "id": 96,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is my original new ticket.",
-                    "message": {
-                        "body": "This is my original new ticket.",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:34:25",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }, {
-                    "id": 97,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                    "message": {
-                        "body": "This is a response by the user to the new ticket.<br /><br /> ",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:34:45",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }, {
-                    "id": 98,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": 1,
-                    "user_id": null,
-                    "type": "R",
-                    "poster": "Michael Reed",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                    "message": {
-                        "body": "This is a reply to the first message.<br />The original and client's first response were through the standard osticket interface.",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:47:47",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": {
-                        "format": "full",
-                        "parts": {
-                            "first": "Michael",
-                            "last": "Reed"
-                        },
-                        "name": "Michael Reed"
-                    },
-                    "user_name": null
-                }, {
-                    "id": 99,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "N",
-                    "poster": "SYSTEM",
-                    "editor": null,
-                    "source": "",
-                    "title": "Status Changed",
-                    "body": "Closed by user",
-                    "message": {
-                        "body": "Closed by user",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:32",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 100,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "M",
-                    "poster": "",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "My updated message",
-                    "message": {
-                        "body": "My updated message",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:33",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 102,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": 1,
-                    "user_id": null,
-                    "type": "R",
-                    "poster": "Michael Reed",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "ticket issue is resolved !",
-                    "message": {
-                        "body": "ticket issue is resolved !",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 13:50:35",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": {
-                        "format": "full",
-                        "parts": {
-                            "first": "Michael",
-                            "last": "Reed"
-                        },
-                        "name": "Michael Reed"
-                    },
-                    "user_name": null
-                }, {
-                    "id": 103,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "N",
-                    "poster": "SYSTEM",
-                    "editor": null,
-                    "source": "",
-                    "title": "Status Changed",
-                    "body": "Closed by user",
-                    "message": {
-                        "body": "Closed by user",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 14:03:19",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }, {
-                    "id": 104,
-                    "pid": 0,
-                    "thread_id": 46,
-                    "staff_id": null,
-                    "user_id": null,
-                    "type": "M",
-                    "poster": "",
-                    "editor": null,
-                    "source": "",
-                    "title": null,
-                    "body": "My updated message",
-                    "message": {
-                        "body": "My updated message",
-                        "type": "html",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": false,
-                            "balanced": true
-                        }
-                    },
-                    "format": "html",
-                    "created": "2018-11-13 14:03:20",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": null
-                }
-            ]
-        }, {
-            "ticket_number": "542343",
-            "subject": "Testing API",
-            "ticket_status": "Open",
-            "statusId": 1,
-            "priority": "Low",
-            "department": "Support",
-            "create_timestamp": "2018-11-13 13:50:33",
-            "user": {
-                "fullname": "Michael User2",
-                "firstname": "Michael",
-                "lastname": "User2",
-                "email": "theodog.test@gmail.com",
-                "phone": ""
-            },
-            "source": "API",
-            "due_timestamp": "2018-11-15 13:50:33",
-            "close_timestamp": null,
-            "topic": "Feedback",
-            "topicId": 2,
-            "last_message_timestamp": "2018-11-13 13:50:33",
-            "last_response_timestamp": null,
-            "assigned_to": [],
-            "threads": [{
-                    "id": 101,
-                    "pid": 0,
-                    "thread_id": 47,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "API",
-                    "title": "Testing API",
-                    "body": "My original message",
-                    "message": {
-                        "body": "My original message",
-                        "type": "text",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": true
-                        }
-                    },
-                    "format": "text",
-                    "created": "2018-11-13 13:50:33",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }
-            ]
-        }, {
-            "ticket_number": "407896",
-            "subject": "Testing API",
-            "ticket_status": "Open",
-            "statusId": 1,
-            "priority": "Low",
-            "department": "Support",
-            "create_timestamp": "2018-11-13 14:03:20",
-            "user": {
-                "fullname": "Michael User2",
-                "firstname": "Michael",
-                "lastname": "User2",
-                "email": "theodog.test@gmail.com",
-                "phone": ""
-            },
-            "source": "API",
-            "due_timestamp": "2018-11-15 14:03:20",
-            "close_timestamp": null,
-            "topic": "Feedback",
-            "topicId": 2,
-            "last_message_timestamp": "2018-11-13 14:03:20",
-            "last_response_timestamp": null,
-            "assigned_to": [],
-            "threads": [{
-                    "id": 105,
-                    "pid": 0,
-                    "thread_id": 48,
-                    "staff_id": null,
-                    "user_id": 5,
-                    "type": "M",
-                    "poster": "Michael User2",
-                    "editor": null,
-                    "source": "API",
-                    "title": "Testing API",
-                    "body": "My original message",
-                    "message": {
-                        "body": "My original message",
-                        "type": "text",
-                        "stripped_images": [],
-                        "embedded_images": [],
-                        "options": {
-                            "strip-embedded": true
-                        }
-                    },
-                    "format": "text",
-                    "created": "2018-11-13 14:03:20",
-                    "updated": "0000-00-00 00:00:00",
-                    "staff_name": null,
-                    "user_name": {
-                        "format": "original",
-                        "parts": {
-                            "salutation": "",
-                            "first": "Michael",
-                            "suffix": "",
-                            "last": "User2",
-                            "middle": ""
-                        },
-                        "name": "Michael User2"
-                    }
-                }
-            ]
+getTopics
+GET /api/topics.json
+
+params:
+
+{}
+Status: success
+
+Response:
+
+[
+  {
+    "id": 2,
+    "value": "Feedback"
+  },
+  {
+    "id": 1,
+    "value": "General Inquiry"
+  },
+  {
+    "id": 10,
+    "value": "Report a Problem"
+  },
+  {
+    "id": 11,
+    "value": "Report a Problem / Access Issue"
+  }
+]
+
+getTicket
+GET /api/tickets.json/112356
+
+params:
+
+{}
+Status: success
+
+Response:
+
+{
+  "ticket_number": "112356",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:21:53",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:21:53",
+  "close_timestamp": null,
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": "2018-11-16 13:21:53",
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 278,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
         }
-    ],
-    "status_code": "0",
-    "status_msg": "success"
+      },
+      "format": "text",
+      "created": "2018-11-16 13:21:53",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    }
+  ]
 }
 
-POST /api/scp/tickets/reply.json: {
-    "ticketNumber": 896164,
-    "msgId": "",
-    "a": "reply",
-    "emailreply": "1",
-    "emailcollab": "1",
-    "cannedResp": "0",
-    "draft_id": "",
-    "response": "ticket issue is resolved !",
-    "signature": "none",
-    "reply_status_id": "1",
-    "staffUserName": "Michael",
-    "ip_address": "::1",
-    "cannedattachments": ""
+closeTicket
+DELETE /api/tickets.json/112356
+
+params:
+
+{
+  "user_id": 5
 }
-response: {
-    "status_code": "0",
-    "status_msg": "reply posted successfully"
+Status: success
+
+Response:
+
+undefined
+
+reopenTicket
+POST /api/tickets.json/112356
+
+params:
+
+{
+  "user_id": 5
 }
+Status: success
+
+Response:
+
+{
+  "ticket_number": "112356",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:21:53",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:21:53",
+  "close_timestamp": "2018-11-16 13:23:21",
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": "2018-11-16 13:21:53",
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 278,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
+        }
+      },
+      "format": "text",
+      "created": "2018-11-16 13:21:53",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    },
+    {
+      "id": 280,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:20",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    }
+  ]
+}
+
+closeTicket
+DELETE /api/tickets.json/112356
+
+params:
+
+{
+  "email": "theodog.test@gmail.com"
+}
+Status: success
+
+Response:
+
+undefined
+
+reopenTicket
+POST /api/tickets.json/112356
+
+params:
+
+{
+  "email": "theodog.test@gmail.com"
+}
+Status: success
+
+Response:
+
+{
+  "ticket_number": "112356",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:21:53",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:21:53",
+  "close_timestamp": "2018-11-16 13:23:22",
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": "2018-11-16 13:21:53",
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 278,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
+        }
+      },
+      "format": "text",
+      "created": "2018-11-16 13:21:53",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    },
+    {
+      "id": 280,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:20",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    },
+    {
+      "id": 281,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:21",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    }
+  ]
+}
+
+updateTicket
+PUT /api/tickets.json/112356
+
+params:
+
+{
+  "user_id": 5,
+  "message": "My updated message using user_id"
+}
+Status: success
+
+Response:
+
+{
+  "ticket_number": "112356",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:21:53",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:21:53",
+  "close_timestamp": "2018-11-16 13:23:22",
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": "2018-11-16 13:23:22",
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 278,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
+        }
+      },
+      "format": "text",
+      "created": "2018-11-16 13:21:53",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    },
+    {
+      "id": 280,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:20",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    },
+    {
+      "id": 281,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:21",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    },
+    {
+      "id": 282,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "M",
+      "poster": "",
+      "editor": null,
+      "source": "",
+      "title": null,
+      "body": "My updated message using user_id",
+      "message": {
+        "body": "My updated message using user_id",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:22",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    }
+  ]
+}
+
+updateTicket
+PUT /api/tickets.json/112356
+
+params:
+
+{
+  "email": "theodog.test@gmail.com",
+  "message": "My updated message using email"
+}
+Status: success
+
+Response:
+
+{
+  "ticket_number": "112356",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:21:53",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:21:53",
+  "close_timestamp": "2018-11-16 13:23:22",
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": {
+    "alias": null,
+    "func": "NOW",
+    "args": []
+  },
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 278,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
+        }
+      },
+      "format": "text",
+      "created": "2018-11-16 13:21:53",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    },
+    {
+      "id": 280,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:20",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    },
+    {
+      "id": 281,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "N",
+      "poster": "SYSTEM",
+      "editor": null,
+      "source": "",
+      "title": "Status Changed",
+      "body": "Closed by user",
+      "message": {
+        "body": "Closed by user",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:21",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    },
+    {
+      "id": 282,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "M",
+      "poster": "",
+      "editor": null,
+      "source": "",
+      "title": null,
+      "body": "My updated message using user_id",
+      "message": {
+        "body": "My updated message using user_id",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:22",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    },
+    {
+      "id": 283,
+      "pid": 0,
+      "thread_id": 104,
+      "staff_id": null,
+      "user_id": null,
+      "type": "M",
+      "poster": "",
+      "editor": null,
+      "source": "",
+      "title": null,
+      "body": "My updated message using email",
+      "message": {
+        "body": "My updated message using email",
+        "type": "html",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": false,
+          "balanced": true
+        }
+      },
+      "format": "html",
+      "created": "2018-11-16 13:23:22",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": null
+    }
+  ]
+}
+
+create
+POST /api/tickets.json
+
+params:
+
+{
+  "email": "theodog.test@gmail.com",
+  "message": "My original message",
+  "name": "John Doe",
+  "subject": "Testing API",
+  "topicId": 2
+}
+Status: success
+
+Response:
+
+{
+  "ticket_number": "458068",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:23:23",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:23:23",
+  "close_timestamp": null,
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": "2018-11-16 13:23:23",
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 284,
+      "pid": 0,
+      "thread_id": 105,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
+        }
+      },
+      "format": "text",
+      "created": "2018-11-16 13:23:23",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    }
+  ]
+}
+
+create
+POST /api/tickets.json
+
+params:
+
+{
+  "user_id": 5,
+  "message": "My original message",
+  "name": "John Doe",
+  "subject": "Testing API",
+  "topicId": 2
+}
+Status: success
+
+Response:
+
+{
+  "ticket_number": "888010",
+  "subject": "Testing API",
+  "ticket_status": "Open",
+  "statusId": 1,
+  "priority": "Low",
+  "department": "Support",
+  "create_timestamp": "2018-11-16 13:23:23",
+  "user": {
+    "fullname": "Michael User2",
+    "firstname": "Michael",
+    "lastname": "User2",
+    "email": "theodog.test@gmail.com",
+    "phone": ""
+  },
+  "source": "API",
+  "due_timestamp": "2018-11-18 13:23:23",
+  "close_timestamp": null,
+  "topic": "Feedback",
+  "topicId": 2,
+  "last_message_timestamp": "2018-11-16 13:23:23",
+  "last_response_timestamp": null,
+  "assigned_to": [],
+  "threads": [
+    {
+      "id": 285,
+      "pid": 0,
+      "thread_id": 106,
+      "staff_id": null,
+      "user_id": 5,
+      "type": "M",
+      "poster": "Michael User2",
+      "editor": null,
+      "source": "API",
+      "title": "Testing API",
+      "body": "My original message",
+      "message": {
+        "body": "My original message",
+        "type": "text",
+        "stripped_images": [],
+        "embedded_images": [],
+        "options": {
+          "strip-embedded": true
+        }
+      },
+      "format": "text",
+      "created": "2018-11-16 13:23:23",
+      "updated": "0000-00-00 00:00:00",
+      "staff_name": null,
+      "user_name": {
+        "format": "original",
+        "parts": {
+          "salutation": "",
+          "first": "Michael",
+          "suffix": "",
+          "last": "User2",
+          "middle": ""
+        },
+        "name": "Michael User2"
+      }
+    }
+  ]
+}
+
+create
+POST /api/scp/users.json
+
+params:
+
+{
+  "phone": "4254441212X123",
+  "notes": "Mynotes",
+  "name": "john doe",
+  "email": "new.user@gmail.com",
+  "password": "thepassword",
+  "timezone": "America/Los_Angeles"
+}
+Status: success
+
+Response:
+
+{
+  "id": 19,
+  "name": "john doe",
+  "email": "new.user@gmail.com",
+  "phone": "(425) 444-1212 x123"
+}
+
+get ticket info
+GET /api/scp/tickets/ticketInfo.json
+
+params:
+
+{
+  "ticketNumber": 112356
+}
+Status: success
+
+Response:
+
+{
+  "ticket": {
+    "ticket_number": "112356",
+    "subject": "Testing API",
+    "ticket_status": "Open",
+    "statusId": 1,
+    "priority": "Low",
+    "department": "Support",
+    "create_timestamp": "2018-11-16 13:21:53",
+    "user": {
+      "fullname": "Michael User2",
+      "firstname": "Michael",
+      "lastname": "User2",
+      "email": "theodog.test@gmail.com",
+      "phone": ""
+    },
+    "source": "API",
+    "due_timestamp": "2018-11-18 13:21:53",
+    "close_timestamp": "2018-11-16 13:23:22",
+    "topic": "Feedback",
+    "topicId": 2,
+    "last_message_timestamp": "2018-11-16 13:23:22",
+    "last_response_timestamp": null,
+    "assigned_to": [],
+    "threads": [
+      {
+        "id": 278,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": 5,
+        "type": "M",
+        "poster": "Michael User2",
+        "editor": null,
+        "source": "API",
+        "title": "Testing API",
+        "body": "My original message",
+        "message": {
+          "body": "My original message",
+          "type": "text",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": true
+          }
+        },
+        "format": "text",
+        "created": "2018-11-16 13:21:53",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": {
+          "format": "original",
+          "parts": {
+            "salutation": "",
+            "first": "Michael",
+            "suffix": "",
+            "last": "User2",
+            "middle": ""
+          },
+          "name": "Michael User2"
+        }
+      },
+      {
+        "id": 280,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": null,
+        "type": "N",
+        "poster": "SYSTEM",
+        "editor": null,
+        "source": "",
+        "title": "Status Changed",
+        "body": "Closed by user",
+        "message": {
+          "body": "Closed by user",
+          "type": "html",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": false,
+            "balanced": true
+          }
+        },
+        "format": "html",
+        "created": "2018-11-16 13:23:20",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": null
+      },
+      {
+        "id": 281,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": null,
+        "type": "N",
+        "poster": "SYSTEM",
+        "editor": null,
+        "source": "",
+        "title": "Status Changed",
+        "body": "Closed by user",
+        "message": {
+          "body": "Closed by user",
+          "type": "html",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": false,
+            "balanced": true
+          }
+        },
+        "format": "html",
+        "created": "2018-11-16 13:23:21",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": null
+      },
+      {
+        "id": 282,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": null,
+        "type": "M",
+        "poster": "",
+        "editor": null,
+        "source": "",
+        "title": null,
+        "body": "My updated message using user_id",
+        "message": {
+          "body": "My updated message using user_id",
+          "type": "html",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": false,
+            "balanced": true
+          }
+        },
+        "format": "html",
+        "created": "2018-11-16 13:23:22",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": null
+      },
+      {
+        "id": 283,
+        "pid": 0,
+        "thread_id": 104,
+        "staff_id": null,
+        "user_id": null,
+        "type": "M",
+        "poster": "",
+        "editor": null,
+        "source": "",
+        "title": null,
+        "body": "My updated message using email",
+        "message": {
+          "body": "My updated message using email",
+          "type": "html",
+          "stripped_images": [],
+          "embedded_images": [],
+          "options": {
+            "strip-embedded": false,
+            "balanced": true
+          }
+        },
+        "format": "html",
+        "created": "2018-11-16 13:23:22",
+        "updated": "0000-00-00 00:00:00",
+        "staff_name": null,
+        "user_name": null
+      }
+    ]
+  },
+  "status_code": "0",
+  "status_msg": "ticket details retrieved successfully"
+}
+
+get staff tickets
+GET /api/scp/tickets/staffTickets.json
+
+params:
+
+{
+  "staffUserName": "Michael"
+}
+Status: success
+
+Response:
+
+{
+  "tickets": [],
+  "status_code": "0",
+  "status_msg": "success"
+}
+
+get client tickets
+GET /api/scp/tickets/clientTickets.json
+
+params:
+
+{
+  "clientUserMail": "theodog.test@gmail.com"
+}
+Status: success
+
+Response:
+
+{
+  "tickets": [
+    {
+      "ticket_number": "112356",
+      "subject": "Testing API",
+      "ticket_status": "Open",
+      "statusId": 1,
+      "priority": "Low",
+      "department": "Support",
+      "create_timestamp": "2018-11-16 13:21:53",
+      "user": {
+        "fullname": "Michael User2",
+        "firstname": "Michael",
+        "lastname": "User2",
+        "email": "theodog.test@gmail.com",
+        "phone": ""
+      },
+      "source": "API",
+      "due_timestamp": "2018-11-18 13:21:53",
+      "close_timestamp": "2018-11-16 13:23:22",
+      "topic": "Feedback",
+      "topicId": 2,
+      "last_message_timestamp": "2018-11-16 13:23:22",
+      "last_response_timestamp": null,
+      "assigned_to": [],
+      "threads": [
+        {
+          "id": 278,
+          "pid": 0,
+          "thread_id": 104,
+          "staff_id": null,
+          "user_id": 5,
+          "type": "M",
+          "poster": "Michael User2",
+          "editor": null,
+          "source": "API",
+          "title": "Testing API",
+          "body": "My original message",
+          "message": {
+            "body": "My original message",
+            "type": "text",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": true
+            }
+          },
+          "format": "text",
+          "created": "2018-11-16 13:21:53",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": {
+            "format": "original",
+            "parts": {
+              "salutation": "",
+              "first": "Michael",
+              "suffix": "",
+              "last": "User2",
+              "middle": ""
+            },
+            "name": "Michael User2"
+          }
+        },
+        {
+          "id": 280,
+          "pid": 0,
+          "thread_id": 104,
+          "staff_id": null,
+          "user_id": null,
+          "type": "N",
+          "poster": "SYSTEM",
+          "editor": null,
+          "source": "",
+          "title": "Status Changed",
+          "body": "Closed by user",
+          "message": {
+            "body": "Closed by user",
+            "type": "html",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": false,
+              "balanced": true
+            }
+          },
+          "format": "html",
+          "created": "2018-11-16 13:23:20",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": null
+        },
+        {
+          "id": 281,
+          "pid": 0,
+          "thread_id": 104,
+          "staff_id": null,
+          "user_id": null,
+          "type": "N",
+          "poster": "SYSTEM",
+          "editor": null,
+          "source": "",
+          "title": "Status Changed",
+          "body": "Closed by user",
+          "message": {
+            "body": "Closed by user",
+            "type": "html",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": false,
+              "balanced": true
+            }
+          },
+          "format": "html",
+          "created": "2018-11-16 13:23:21",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": null
+        },
+        {
+          "id": 282,
+          "pid": 0,
+          "thread_id": 104,
+          "staff_id": null,
+          "user_id": null,
+          "type": "M",
+          "poster": "",
+          "editor": null,
+          "source": "",
+          "title": null,
+          "body": "My updated message using user_id",
+          "message": {
+            "body": "My updated message using user_id",
+            "type": "html",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": false,
+              "balanced": true
+            }
+          },
+          "format": "html",
+          "created": "2018-11-16 13:23:22",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": null
+        },
+        {
+          "id": 283,
+          "pid": 0,
+          "thread_id": 104,
+          "staff_id": null,
+          "user_id": null,
+          "type": "M",
+          "poster": "",
+          "editor": null,
+          "source": "",
+          "title": null,
+          "body": "My updated message using email",
+          "message": {
+            "body": "My updated message using email",
+            "type": "html",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": false,
+              "balanced": true
+            }
+          },
+          "format": "html",
+          "created": "2018-11-16 13:23:22",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": null
+        }
+      ]
+    },
+    {
+      "ticket_number": "458068",
+      "subject": "Testing API",
+      "ticket_status": "Open",
+      "statusId": 1,
+      "priority": "Low",
+      "department": "Support",
+      "create_timestamp": "2018-11-16 13:23:23",
+      "user": {
+        "fullname": "Michael User2",
+        "firstname": "Michael",
+        "lastname": "User2",
+        "email": "theodog.test@gmail.com",
+        "phone": ""
+      },
+      "source": "API",
+      "due_timestamp": "2018-11-18 13:23:23",
+      "close_timestamp": null,
+      "topic": "Feedback",
+      "topicId": 2,
+      "last_message_timestamp": "2018-11-16 13:23:23",
+      "last_response_timestamp": null,
+      "assigned_to": [],
+      "threads": [
+        {
+          "id": 284,
+          "pid": 0,
+          "thread_id": 105,
+          "staff_id": null,
+          "user_id": 5,
+          "type": "M",
+          "poster": "Michael User2",
+          "editor": null,
+          "source": "API",
+          "title": "Testing API",
+          "body": "My original message",
+          "message": {
+            "body": "My original message",
+            "type": "text",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": true
+            }
+          },
+          "format": "text",
+          "created": "2018-11-16 13:23:23",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": {
+            "format": "original",
+            "parts": {
+              "salutation": "",
+              "first": "Michael",
+              "suffix": "",
+              "last": "User2",
+              "middle": ""
+            },
+            "name": "Michael User2"
+          }
+        }
+      ]
+    },
+    {
+      "ticket_number": "888010",
+      "subject": "Testing API",
+      "ticket_status": "Open",
+      "statusId": 1,
+      "priority": "Low",
+      "department": "Support",
+      "create_timestamp": "2018-11-16 13:23:23",
+      "user": {
+        "fullname": "Michael User2",
+        "firstname": "Michael",
+        "lastname": "User2",
+        "email": "theodog.test@gmail.com",
+        "phone": ""
+      },
+      "source": "API",
+      "due_timestamp": "2018-11-18 13:23:23",
+      "close_timestamp": null,
+      "topic": "Feedback",
+      "topicId": 2,
+      "last_message_timestamp": "2018-11-16 13:23:23",
+      "last_response_timestamp": null,
+      "assigned_to": [],
+      "threads": [
+        {
+          "id": 285,
+          "pid": 0,
+          "thread_id": 106,
+          "staff_id": null,
+          "user_id": 5,
+          "type": "M",
+          "poster": "Michael User2",
+          "editor": null,
+          "source": "API",
+          "title": "Testing API",
+          "body": "My original message",
+          "message": {
+            "body": "My original message",
+            "type": "text",
+            "stripped_images": [],
+            "embedded_images": [],
+            "options": {
+              "strip-embedded": true
+            }
+          },
+          "format": "text",
+          "created": "2018-11-16 13:23:23",
+          "updated": "0000-00-00 00:00:00",
+          "staff_name": null,
+          "user_name": {
+            "format": "original",
+            "parts": {
+              "salutation": "",
+              "first": "Michael",
+              "suffix": "",
+              "last": "User2",
+              "middle": ""
+            },
+            "name": "Michael User2"
+          }
+        }
+      ]
+    }
+  ],
+  "status_code": "0",
+  "status_msg": "success"
+}
+
+post reply to ticket with ticket new status
+POST /api/scp/tickets/reply.json
+
+params:
+
+{
+  "ticketNumber": 112356,
+  "msgId": "",
+  "a": "reply",
+  "emailreply": "1",
+  "emailcollab": "1",
+  "cannedResp": "0",
+  "draft_id": "",
+  "response": "ticket issue is resolved!",
+  "signature": "none",
+  "reply_status_id": "1",
+  "staffUserName": "Michael",
+  "ip_address": "::1",
+  "cannedattachments": ""
+}
+Status: success
+
+Response:
+
+{
+  "status_code": "0",
+  "status_msg": "reply posted successfully"
+}
+
+restGetTickets
+GET /api/scp/tickets.json
+
+params:
+
+{}
+Status: success
+
+Response:
+
+[
+  [
+    [
+      "number",
+      "112356"
+    ],
+    [
+      "created",
+      "2018-11-16 13:21:53"
+    ],
+    [
+      "updated",
+      "2018-11-16 13:23:25"
+    ],
+    [
+      "closed",
+      "2018-11-16 13:23:22"
+    ],
+    [
+      "href",
+      "/api/tickets/112356"
+    ]
+  ],
+  [
+    [
+      "number",
+      "458068"
+    ],
+    [
+      "created",
+      "2018-11-16 13:23:23"
+    ],
+    [
+      "updated",
+      "2018-11-16 13:23:23"
+    ],
+    [
+      "closed",
+      null
+    ],
+    [
+      "href",
+      "/api/tickets/458068"
+    ]
+  ],
+  [
+    [
+      "number",
+      "888010"
+    ],
+    [
+      "created",
+      "2018-11-16 13:23:23"
+    ],
+    [
+      "updated",
+      "2018-11-16 13:23:23"
+    ],
+    [
+      "closed",
+      null
+    ],
+    [
+      "href",
+      "/api/tickets/888010"
+    ]
+  ]
+]
 ```

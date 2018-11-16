@@ -97,7 +97,7 @@ class TicketApiController extends ApiController {
     }
 
 
-    function create($format) {
+    private function create($format) {
 
         if(!($key=$this->requireApiKey()) || !$key->canCreateTickets())
             return $this->exerr(401, __('API key not authorized'));
@@ -181,10 +181,31 @@ class TicketApiController extends ApiController {
     }
 
     ######  Added Methods ############
-    //Added client methods to support API endpoints.  See https://github.com/osTicket/osTicket/pull/4361/files for staff methods.
     //All methods assume dispatcher validates arguments as integers and handles errors (i.e. (?P<tid>\d+) ).
-    //All methods require client email in the parameters except for getTopics() and getTicket().  Email is not used for authentication, but to log who made a change.
+    //Most tickets require user_id or email in paramaters (not necessarily for authentication, but to log who made a change)
 
+    public function create($format) {
+        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $ticket = null;
+        if(!strcasecmp($format, 'email')) {
+            # Handle remote piped emails - could be a reply...etc.
+            $ticket = $this->processEmail();
+        } else {
+            # Parse request body
+            $params = $this->getParams($format);
+            if(!isset($params['email'])) {
+                $params['email']=$this->getUser($format, $params)->getEmail();
+            }
+            $ticket = $this->createTicket($params);
+        }
+
+        if(!$ticket) {
+            throw new ApiException('Unable to create new ticket: unknown error.', 500);
+        }
+        $this->response(201, json_encode($ticket));
+    }
+
+    //Added client methods to support API endpoints.
     public function getTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::getTicket($tid) using $format");
         //This API request does not need to provide user identifier.

@@ -41,10 +41,10 @@
                 var email='theodog.test@gmail.com',
                 user_id=5,
                 staffUserName='Michael',
-                ticketId=508809,
+                ticketId=112356,
                 api='D605900B7C1AC09BB600700F31D8E339';
 
-                var postData1={
+                var allAvailableTicketProperties={  //Not tested.
                     "email": "api@osticket.com",
                     "name": "Angry User",
                     "subject": "Testing API",
@@ -62,7 +62,7 @@
                     ]
                 };
 
-                var postData2={
+                var createTicketPostWithEmail={
                     email: email,
                     //"message": "data:text/html, My original message",
                     "message": "My original message",
@@ -70,8 +70,19 @@
                     "subject": "Testing API",
                     "topicId": 2,
                 };
+                var createTicketPostWithUserId = Object.assign({user_id: user_id}, createTicketPostWithEmail);
+                delete(createTicketPostWithUserId.email);
 
-                var postData3={
+                var newUser={
+                    'phone': '4254441212X123',
+                    'notes': 'Mynotes',
+                    'name': 'john doe',
+                    'email': 'new.user@gmail.com',
+                    'password': 'thepassword',
+                    'timezone': 'America/Los_Angeles',
+                };
+
+                var replyTicketPost={
                     "ticketNumber" : ticketId,
                     "msgId" : "",
                     "a" : "reply",
@@ -79,7 +90,7 @@
                     "emailcollab" : "1",
                     "cannedResp" : "0",
                     "draft_id" : "",
-                    "response" : "ticket issue is resolved !",
+                    "response" : "ticket issue is resolved!",
                     "signature" : "none",
                     "reply_status_id" : "1",
                     "staffUserName" : staffUserName,
@@ -89,21 +100,31 @@
 
                 var stack=[
                     //my endpoints (accessed by end user)
+
+                    //ticket endpoints
                     {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {user_id: user_id}},
                     {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {email: email}},
                     {test: 'getTopics', method: 'GET', url: '/api/topics.json', data: {}},
                     {test: 'getTicket', method: 'GET', url: '/api/tickets.json/'+ticketId, data: {}},
+                    {test: 'closeTicket', method: 'DELETE', url: '/api/tickets.json/'+ticketId, data: {user_id: user_id}},
+                    {test: 'reopenTicket', method: 'POST', url: '/api/tickets.json/'+ticketId, data: {user_id: user_id}},
                     {test: 'closeTicket', method: 'DELETE', url: '/api/tickets.json/'+ticketId, data: {email: email}},
                     {test: 'reopenTicket', method: 'POST', url: '/api/tickets.json/'+ticketId, data: {email: email}},
-                    {test: 'updateTicket', method: 'PUT', url: '/api/tickets.json/'+ticketId, data: {email: email, "message": "My updated message"}},
-                    {test: 'create', method: 'POST', url: '/api/tickets.json', data: postData2},
+                    {test: 'updateTicket', method: 'PUT', url: '/api/tickets.json/'+ticketId, data: {user_id: user_id, "message": "My updated message using user_id"}},
+                    {test: 'updateTicket', method: 'PUT', url: '/api/tickets.json/'+ticketId, data: {email: email, "message": "My updated message using email"}},
+                    {test: 'create', method: 'POST', url: '/api/tickets.json', data: createTicketPostWithEmail},
+                    {test: 'create', method: 'POST', url: '/api/tickets.json', data: createTicketPostWithUserId},
+
+                    //user endpoints
+                    {test: 'create', method: 'POST', url: '/api/scp/users.json', data: newUser},
+
 
                     //amalmagdy's endpoints (accessed by staff user)
                     {test: 'get ticket info', method: 'GET', url: '/api/scp/tickets/ticketInfo.json', data: {ticketNumber: ticketId}},
                     {test: 'get staff tickets', method: 'GET', url: '/api/scp/tickets/staffTickets.json', data: {staffUserName: staffUserName}},
                     {test: 'get client tickets', method: 'GET', url: '/api/scp/tickets/clientTickets.json', data: {clientUserMail: email}},
-                    {test: 'post reply to ticket with ticket new status', method: 'POST', url: '/api/scp/tickets/reply.json', data: postData3},
-                    // {test: 'restGetTickets', method: 'GET', url: '/api/scp/tickets.json', data: {}}, //What is the point of this endpoint?
+                    {test: 'post reply to ticket with ticket new status', method: 'POST', url: '/api/scp/tickets/reply.json', data: replyTicketPost},
+                    {test: 'restGetTickets', method: 'GET', url: '/api/scp/tickets.json', data: {}}, //What is the point of this endpoint?
                 ];
                 testApi(stack, api);
             });

@@ -167,7 +167,12 @@ class API {
 
 class ApiController {
 
-    var $apikey;
+    var $apikey, $httpParser;
+
+    function __construct() {
+        include_once INCLUDE_DIR.'HttpParser.php';
+        $this->httpParser=new HttpParser();   //This should be injected
+    }
 
     function requireApiKey() {
         # Validate the API key -- required to be sent via the X-API-Key
@@ -308,47 +313,19 @@ class ApiController {
     }
 
     //Default response method - can be overwritten in subclasses.
-
-    //response() was modified and getContentType() and contentTypeToFormat() was added by https://github.com/osTicket/osTicket/pull/4361/commits/781e15b0dd89c205d3999fb844e984b695a36368
-    //Verify if this should be added.
-
-    function response($code, $resp, $contentType="text/plain") {
-        Http::response($code, $resp, $contentType);
+    protected function response($code, $resp) {
+        $this->httpParser->response($resp, $code);
         exit();
     }
 
-    function getContentType() {
-        return strtolower($_SERVER['CONTENT-TYPE']);
-    }
-    function contentTypeToFormat($content_type) {
-        # Require a valid content-type (json, xml or rfc822) for POST and PUT
-        switch($content_type) {
-            case 'application/json':
-                return "json";
-            case 'application/xml':
-                return "xml";
-            case 'message/rfc822':
-                return "email";
-            default:
-            switch(strtolower($_SERVER['REQUEST_METHOD'])) {
-                case 'post':
-                case 'put':
-                    $this->exerr(415, __('Unsupported data format'));
-                case 'get':
-                case 'delete':
-                    return "";
-            }
-        }
+    protected function getParams(string $format):array {
+        return $this->httpParser->getRequest();;
     }
 
-    /**
-    * Identifies request data format using content-type and passes it on to
-    * getRequest
-    */
-    function getRequestAuto() {
-        $content_type = $this->getContentType();
-        $format = $this->contentTypeToFormat($content_type);
-        return $this->getRequest($format);
+    protected function validatePermision($create=false) {
+        if(!($api=$this->requireApiKey()) || $create && !$api->canCreateTickets()) {
+            throw new ApiException('API key not authorized.', 401);
+        }
     }
 }
 

@@ -55,5 +55,5 @@ try{
     $dispatcher->resolve($ost->get_path_info());;
 }
 catch (ApiException $e){
-    Http::response($e->getCode(), __($e->getMessage()));
+    Http::response($e->getCode(), json_encode(['error'=>__($e->getMessage())]));
 }

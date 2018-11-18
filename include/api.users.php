@@ -10,9 +10,10 @@ class UserApiController extends ApiController {
     public function create(string $format):Response {
         //see ajax.users.php addUser() and class.api.php for example
         //syslog(LOG_INFO, "UserApiController::create() using $format");
-        $api=$this->getApi(true); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(true); //will throw exception if invalid
         $params = $this->getParams($format);
         //Maybe use osTicket validation methods instead?
+        $params['phone'] = $params['phone'] ?? null;
         $params=array_intersect_key($params, array_flip(['phone','notes','name','email','timezone','password']));
         if (count($params)!==6) {
             $missing=array_diff(['phone','notes','name','email','timezone','password'], array_keys($params));
@@ -32,17 +33,6 @@ class UserApiController extends ApiController {
         if(!$user->register($params, $errors)) {
             throw new ApiException('User added but error attempting to register', 400);
         }
-        return $this->response(201, $user->to_json());
-    }
-
-    //Move these and ticket common methods to parent
-    private function getParams(string $format):array {
-        return $_SERVER['REQUEST_METHOD']==='GET'?$_GET:$this->getRequest($format);
-    }
-    private function getApi($create=false):API {
-        if(!($api=$this->requireApiKey()) || $create && !$api->canCreateTickets()) {
-            throw new ApiException('API key not authorized.', 401);
-        }
-        return $api;
+        return $this->response(201, $user->getInfo());
     }
 }

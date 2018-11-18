@@ -26,7 +26,7 @@
                         url: o.url,
                         headers: {"X-API-Key": api},
                         //osticket's existing api create method requires all requests in body (post, put, delete) to be a string, so do the same to be consistant
-                        data: o.method=='GET'?o.data:JSON.stringify(o.data),
+                        data: o.data,   //o.method=='GET'?o.data:JSON.stringify(o.data),
                         dataType: 'json',
                         success: function (rsp){
                             logResults('success', o.test, o.method, o.url, o.data, rsp);
@@ -38,10 +38,10 @@
                         }
                     });
                 }
-                var email='theodog.test@gmail.com',
-                user_id=5,
+                var email='rm.reed@comcast.net',
+                user_id=36,
                 staffUserName='Michael',
-                ticketId=112356,
+                ticketId=777577,
                 api='D605900B7C1AC09BB600700F31D8E339';
 
                 var allAvailableTicketProperties={  //Not tested.
@@ -70,14 +70,20 @@
                     "subject": "Testing API",
                     "topicId": 2,
                 };
-                var createTicketPostWithUserId = Object.assign({user_id: user_id}, createTicketPostWithEmail);
-                delete(createTicketPostWithUserId.email);
+                var createTicketPostWithUserId={
+                    user_id: user_id,
+                    //"message": "data:text/html, My original message",
+                    "message": "My original message",
+                    "name": "John Doe",
+                    "subject": "Testing API",
+                    "topicId": 2,
+                };
 
                 var newUser={
                     'phone': '4254441212X123',
                     'notes': 'Mynotes',
                     'name': 'john doe',
-                    'email': 'new.user@gmail.com',
+                    'email': 'nesdfddddfw.userxxx@gmail.com',
                     'password': 'thepassword',
                     'timezone': 'America/Los_Angeles',
                 };
@@ -125,7 +131,7 @@
                     {test: 'get client tickets', method: 'GET', url: '/api/scp/tickets/clientTickets.json', data: {clientUserMail: email}},
                     {test: 'post reply to ticket with ticket new status', method: 'POST', url: '/api/scp/tickets/reply.json', data: replyTicketPost},
                     {test: 'restGetTickets', method: 'GET', url: '/api/scp/tickets.json', data: {}}, //What is the point of this endpoint?
-                ];
+                 ];
                 testApi(stack, api);
             });
         </script>

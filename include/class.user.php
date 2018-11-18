@@ -324,13 +324,16 @@ implements TemplateVariable {
 
     function to_json() {
 
-        $info = array(
+        return JsonDataEncoder::encode($this->getInfo());
+    }
+
+    function getInfo() {
+
+        return array(
                 'id'  => $this->getId(),
                 'name' => Format::htmlchars($this->getName()),
                 'email' => (string) $this->getEmail(),
                 'phone' => (string) $this->getPhoneNumber());
-
-        return JsonDataEncoder::encode($info);
     }
 
     function __toString() {

@@ -96,27 +96,6 @@ class TicketApiController extends ApiController {
         return true;
     }
 
-
-    private function create($format) {
-
-        if(!($key=$this->requireApiKey()) || !$key->canCreateTickets())
-            return $this->exerr(401, __('API key not authorized'));
-
-        $ticket = null;
-        if(!strcasecmp($format, 'email')) {
-            # Handle remote piped emails - could be a reply...etc.
-            $ticket = $this->processEmail();
-        } else {
-            # Parse request body
-            $ticket = $this->createTicket($this->getRequest($format));
-        }
-
-        if(!$ticket)
-            return $this->exerr(500, __("Unable to create new ticket: unknown error"));
-
-        $this->response(201, json_encode($ticket));
-    }
-
     /* private helper functions */
 
     function createTicket($data) {
@@ -185,7 +164,7 @@ class TicketApiController extends ApiController {
     //Most tickets require user_id or email in paramaters (not necessarily for authentication, but to log who made a change)
 
     public function create($format) {
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(true); //will throw exception if invalid
         $ticket = null;
         if(!strcasecmp($format, 'email')) {
             # Handle remote piped emails - could be a reply...etc.
@@ -202,20 +181,20 @@ class TicketApiController extends ApiController {
         if(!$ticket) {
             throw new ApiException('Unable to create new ticket: unknown error.', 500);
         }
-        $this->response(201, json_encode($ticket));
+        $this->response(201, $ticket);
     }
 
     //Added client methods to support API endpoints.
     public function getTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::getTicket($tid) using $format");
         //This API request does not need to provide user identifier.
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(); //will throw exception if invalid
         $ticket = $this->getByTicketId($tid);
-        return $this->response(200, json_encode($ticket));
+        return $this->response(200, $ticket);
     }
     public function closeTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(true); //will throw exception if invalid
         $ticket = $this->getByTicketId($tid, $this->getUser($format));
         //$ticket->setStatusId(3);
         //$currentStatus=$ticket->getStatus();
@@ -226,37 +205,37 @@ class TicketApiController extends ApiController {
     }
     public function reopenTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(true); //will throw exception if invalid
         $ticket = $this->getByTicketId($tid, $this->getUser($format));
         $ticket->reopen();
-        return $this->response(200, json_encode($ticket));
+        return $this->response(200, $ticket);
     }
     public function updateTicket(string $format, int $tid):Response {
         //syslog(LOG_INFO, "TicketApiController::updateTicket($tid) using $format");    //.json_encode($_POST));
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(true); //will throw exception if invalid
         $params = $this->getParams($format);
         $ticket = $this->getByTicketId($tid, $this->getUser($format, $params));
         $vars=[
-            'message'=>$params['message']->getClean(),
+            'message'=>$params['message'],
             'files'=>[],    //How should this be implemented?
             'draft_id'=>'', //???
             'ip_address'=>$_SERVER['REMOTE_ADDR']
         ];
         $response = $ticket->postMessage($vars, 'web', true);
-        return $this->response(200, json_encode($ticket));
+        return $this->response(200, $ticket);
     }
     public function getTickets(string $format):Response {
         //Future:  Allow for optional filtering for name and topic ID
         //syslog(LOG_INFO, "TicketApiController::getTickets() using $format");
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
+        $this->validatePermision(); //will throw exception if invalid
         $tickets = Ticket::objects()->filter(array('user_id' => $this->getUser($format)->getId()))->all();
-        return $this->response(200, json_encode($tickets));
+        return $this->response(200, $ticket);
     }
     public function getTopics(string $format):Response {
         //syslog(LOG_INFO, "TicketApiController::getTopics() using $format");
         //This API request does not need to provide user identifier.
-        $api=$this->getApi(); //Should this be used.  Currently only fetched to validate API key.
-        return $this->response(200, json_encode($this->createList(Topic::getPublicHelpTopics(), 'id', 'value')));
+        $this->validatePermision(); //will throw exception if invalid
+        return $this->response(200, $this->createList(Topic::getPublicHelpTopics(), 'id', 'value'));
     }
 
     // Private methods to support new api methods.  Verify if existing osticket methods should be used instead.
@@ -276,15 +255,6 @@ class TicketApiController extends ApiController {
             throw new ApiException('Unknown or invalid ticket ID.', 400); //Using generic message on purpose!
         }
         return $ticket;
-    }
-    private function getParams(string $format):array {
-        return $_SERVER['REQUEST_METHOD']==='GET'?$_GET:$this->getRequest($format);
-    }
-    private function getApi($create=false):API {
-        if(!($api=$this->requireApiKey()) || $create && !$api->canCreateTickets()) {
-            throw new ApiException('API key not authorized.', 401);
-        }
-        return $api;
     }
     private function createList(array $items, string $idName, string $valueName):array {
         $list=[];
@@ -346,15 +316,13 @@ class TicketApiController extends ApiController {
 
             $result =  array('ticket'=> $ticket ,'status_code' => '0', 'status_msg' => 'ticket details retrieved successfully');
             $result_code=200;
-            $this->response($result_code, json_encode($result ),
-                $contentType="application/json");
+            $this->response($result_code, $result);
 
         }
         catch ( Throwable $e){
             $msg = $e-> getMessage();
             $result =  array('ticket'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
-            $this->response(500, json_encode($result),
-                $contentType="application/json");
+            $this->response(500, $result);
         }
     }
     /**
@@ -405,7 +373,7 @@ class TicketApiController extends ApiController {
         }
 
         $result_code = 200;
-        $this->response($result_code, json_encode($tickets), $contentType = "application/json");
+        $this->response($result_code, $tickets);
     }
     // staff tickets
     public function getStaffTickets()
@@ -434,15 +402,13 @@ class TicketApiController extends ApiController {
 
             $result_code = 200;
             $result =  array('tickets'=> $tickets ,'status_code' => '0', 'status_msg' => 'success');
-            $this->response($result_code, json_encode($result),
-                $contentType="application/json");
+            $this->response($result_code, $result);
 
         }
         catch ( Throwable $e){
             $msg = $e-> getMessage();
             $result =  array('tickets'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
-            $this->response($result_code, json_encode($result),
-                $contentType="application/json");
+            $this->response($result_code, $result);
         }
     }
 
@@ -468,15 +434,13 @@ class TicketApiController extends ApiController {
             $result_code = 200;
             $result =  array('tickets'=> $tickets ,'status_code' => '0', 'status_msg' => 'success');
 
-            $this->response($result_code, json_encode($result ),
-                $contentType="application/json");
+            $this->response($result_code, $result);
 
         }
         catch ( Throwable $e){
             $msg = $e-> getMessage();
             $result =  array('tickets'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
-            $this->response(500, json_encode($result),
-                $contentType="application/json");
+            $this->response(500, $result);
         }
     }
 
@@ -486,7 +450,7 @@ class TicketApiController extends ApiController {
             if(!($key=$this->requireApiKey()) || !$key->canCreateTickets())
                 return $this->exerr(401, __('API key not authorized'));
 
-            $data = $this->getRequest($format);
+            $data = $this->getParams($format);
 
             # Checks for existing ticket with that number
             $id = Ticket::getIdByNumber($data['ticketNumber']);
@@ -510,14 +474,12 @@ class TicketApiController extends ApiController {
             // $this->response(201, $ticket->getNumber());
             $result =  array( 'status_code' => '0', 'status_msg' => 'reply posted successfully');
             $result_code=200;
-            $this->response($result_code, json_encode($result ),
-                $contentType="application/json");
+            $this->response($result_code, $result);
         }
         catch ( Throwable $e){
             $msg = $e-> getMessage();
             $result =  array('tickets'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
-            $this->response(500, json_encode($result),
-                $contentType="application/json");
+            $this->response(500, $result);
         }
     }
 }

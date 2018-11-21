@@ -3056,7 +3056,6 @@ implements RestrictedAccess, Threadable, JsonSerializable {
     static function create($vars, &$errors, $origin, $autorespond=true,
             $alertstaff=true) {
         global $ost, $cfg, $thisclient, $thisstaff, $staff; //Not sure if $staff should be made global
-
         // Don't enforce form validation for email
         $field_filter = function($type) use ($origin) {
             return function($f) use ($origin, $type) {
@@ -3689,9 +3688,9 @@ implements RestrictedAccess, Threadable, JsonSerializable {
         }
         //How should attachments be included in thread?
         return [
-            'ticket_number' => $this->getNumber(),
+            'ticketNumber' => $this->getNumber(),
             'subject' => $this->getSubject(),
-            'ticket_status' => $this->getStatus()->getName(),
+            'status' => $this->getStatus()->getName(),
             'statusId' => $this->getStatus()->getId(),
             'priority' => $this->getPriority(),
             'department' => $this->getDeptName(),

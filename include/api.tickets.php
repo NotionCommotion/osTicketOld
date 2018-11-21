@@ -161,8 +161,9 @@ class TicketApiController extends ApiController {
 
     ######  Added Methods ############
     //All methods assume dispatcher validates arguments as integers and handles errors (i.e. (?P<tid>\d+) ).
-    //Most tickets require user_id or email in paramaters (not necessarily for authentication, but to log who made a change)
+    //Most tickets require userId or email in paramaters (not necessarily for authentication, but to log who made a change)
 
+    //Maybe change creating new osTicket not to require name?
     public function create($format) {
         $this->validatePermision(true); //will throw exception if invalid
         $ticket = null;
@@ -175,6 +176,74 @@ class TicketApiController extends ApiController {
             if(!isset($params['email'])) {
                 $params['email']=$this->getUser($format, $params)->getEmail();
             }
+            $params['source']='api';
+            /* The standard web interface provides the first (10) properties to Ticket::create() and the entire object to Ticket::postMessage()
+            {
+                "__CSRFToken__": "89921b66f3542e3e0b01b41727fb172d75060725",
+                "a": "open",
+                "topicId": "1",
+                "c95bc232fc241ae7": "My Summary from SC",
+                "message": "My Message",
+                "draft_id": "",
+                "emailId": 0,
+                "deptId": 0,
+                "uid": 35,
+                "cannedattachments": [],
+                "field.20": "My Summary from SC",
+                "field.21": "My Message",
+                "field.4": "Added by admin create Greenbean user.",
+                "field.2": {
+                    "format": "original",
+                    "parts": {
+                        "salutation": "",
+                        "first": "Michael",
+                        "suffix": "",
+                        "last": "Reed",
+                        "middle": ""
+                    },
+                    "name": "Michael Reed"
+                },
+                "field.1": {
+                    "address": "villascape@gmail.com"
+                },
+                "email": {
+                    "address": "villascape@gmail.com"
+                },
+                "name": "Michael Reed",
+                "title": null,
+                "userId": 35
+            }
+            The My API provides the first (7) properties to Ticket::create() and the entire object to Ticket::postMessage()
+            {
+                "userId": 35,
+                "name": "Michael Reed",
+                "topicId": "1",
+                "subject": "My subject from API",
+                "message": "My message",
+                "email": {
+                    "address": "villascape@gmail.com"
+                },
+                "source": "api",
+                "field.20": "My subject from API",
+                "field.21": "My message",
+                "field.2": {
+                    "format": "original",
+                    "parts": {
+                        "salutation": "",
+                        "first": "Michael",
+                        "suffix": "",
+                        "last": "Reed",
+                        "middle": ""
+                    },
+                    "name": "Michael Reed"
+                },
+                "field.4": "Added by admin create Greenbean user.",
+                "field.1": {
+                    "address": "villascape@gmail.com"
+                },
+                "title": "My subject from API"
+            }
+            */
             $ticket = $this->createTicket($params);
         }
 
@@ -186,7 +255,6 @@ class TicketApiController extends ApiController {
 
     //Added client methods to support API endpoints.
     public function getTicket(string $format, int $tid):Response {
-        //syslog(LOG_INFO, "TicketApiController::getTicket($tid) using $format");
         //This API request does not need to provide user identifier.
         $this->validatePermision(); //will throw exception if invalid
         $ticket = $this->getByTicketId($tid);
@@ -204,32 +272,52 @@ class TicketApiController extends ApiController {
         return $this->response(204, null);
     }
     public function reopenTicket(string $format, int $tid):Response {
-        //syslog(LOG_INFO, "TicketApiController::closeTicket($tid) using $format");
         $this->validatePermision(true); //will throw exception if invalid
         $ticket = $this->getByTicketId($tid, $this->getUser($format));
         $ticket->reopen();
         return $this->response(200, $ticket);
     }
     public function updateTicket(string $format, int $tid):Response {
-        //syslog(LOG_INFO, "TicketApiController::updateTicket($tid) using $format");    //.json_encode($_POST));
         $this->validatePermision(true); //will throw exception if invalid
         $params = $this->getParams($format);
-        $ticket = $this->getByTicketId($tid, $this->getUser($format, $params));
+        $user=$this->getUser($format, $params);
+        $ticket = $this->getByTicketId($tid, $user);
         $vars=[
             'message'=>$params['message'],
-            'files'=>[],    //How should this be implemented?
-            'draft_id'=>'', //???
-            'ip_address'=>$_SERVER['REMOTE_ADDR']
+            'userId'=>$user->getId(),
+            'poster'=>$user->getFullName(),
+            'ip_address'=>$_SERVER['REMOTE_ADDR'] //Use web client's IP
         ];
-        $response = $ticket->postMessage($vars, 'web', true);
+        /* The standard web interface provides the following to Ticket::postMessage()
+        {
+            "userId": 35,
+            "poster": "Michael Reed",
+            "message": "Response from web",
+            "cannedattachments": [],
+            "draft_id": ""
+        }
+        My API provides the following to Ticket::postMessage()
+        {
+            "message": "Another response.",
+            "userId": 35,
+            "poster": "Michael Reed",
+            "ip_address": "74.208.80.161"
+        }
+        */
+        $response = $ticket->postMessage($vars, 'api');//Ticket::postMessage($vars, $origin='', $alerts=true)
         return $this->response(200, $ticket);
     }
     public function getTickets(string $format):Response {
         //Future:  Allow for optional filtering for name and topic ID
         //syslog(LOG_INFO, "TicketApiController::getTickets() using $format");
         $this->validatePermision(); //will throw exception if invalid
-        $tickets = Ticket::objects()->filter(array('user_id' => $this->getUser($format)->getId()))->all();
-        return $this->response(200, $ticket);
+        $filter=['user_id' => $this->getUser($format)->getId()];
+        $params = $this->getParams($format);
+        if(isset($params['statusId'])) {
+            $filter['status_id']=$params['statusId'];
+        }
+        $tickets = Ticket::objects()->filter($filter)->all();
+        return $this->response(200, $tickets?$tickets:[]);
     }
     public function getTopics(string $format):Response {
         //syslog(LOG_INFO, "TicketApiController::getTopics() using $format");
@@ -264,21 +352,22 @@ class TicketApiController extends ApiController {
         return $list;
     }
     private function getUser(string $format, array $params=[]):EndUser {
-        //user_id or email must be provided in request parameters
+        //userId or email must be provided in request parameters
         $params=$params?$params:$this->getParams($format);
+        syslog(LOG_INFO, json_encode($params));
         $user = TicketUser::lookupByEmail('theodog.test@gmail.com');
-        if(!empty($params['user_id'])){
-            if(!$user = TicketUser::lookupById($params['user_id'])) {
+        if(isset($params['userId'])){
+            if(!$user = TicketUser::lookupById($params['userId'])) {
                 throw new ApiException('Invalid user.', 400);
             }
         }
-        elseif(!empty($params['email'])){
+        elseif(isset($params['email'])){
             if(!$user = TicketUser::lookupByEmail($params['email'])) {
                 throw new ApiException('Invalid user.', 400);
             }
         }
         else {
-            throw new ApiException('Either user_id or email must be provided in request.', 400);
+            throw new ApiException('Either userId or email must be provided in request.', 400);
         }
         return $user;
     }
@@ -308,7 +397,7 @@ class TicketApiController extends ApiController {
 
 
             if ($id <= 0)
-                return $this->response(404, __("Ticket not found"));
+            return $this->response(404, __("Ticket not found"));
             # Load ticket and send response
             $ticket = new Ticket(0);
             //$ticket->load($id);
@@ -467,7 +556,7 @@ class TicketApiController extends ApiController {
             $response = $ticket->postReply($data , $errors);
 
             if(!$response)
-                return $this->exerr(500, __("Unable to reply to this ticket: unknown error"));
+            return $this->exerr(500, __("Unable to reply to this ticket: unknown error"));
 
             $location_base = '/api/tickets/';
             // header('Location: '.$location_base.$ticket->getNumber());

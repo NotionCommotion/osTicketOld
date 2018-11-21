@@ -39,7 +39,7 @@
                     });
                 }
                 var email='rm.reed@comcast.net',
-                user_id=36,
+                user_id=35,
                 staffUserName='Michael',
                 ticketId=777577,
                 api='D605900B7C1AC09BB600700F31D8E339';
@@ -107,6 +107,8 @@
                 var stack=[
                     //my endpoints (accessed by end user)
 
+                    {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {user_id: user_id, status_id: 3}},
+                    /*
                     //ticket endpoints
                     {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {user_id: user_id}},
                     {test: 'getTickets', method: 'GET', url: '/api/tickets.json', data: {email: email}},
@@ -131,6 +133,7 @@
                     {test: 'get client tickets', method: 'GET', url: '/api/scp/tickets/clientTickets.json', data: {clientUserMail: email}},
                     {test: 'post reply to ticket with ticket new status', method: 'POST', url: '/api/scp/tickets/reply.json', data: replyTicketPost},
                     {test: 'restGetTickets', method: 'GET', url: '/api/scp/tickets.json', data: {}}, //What is the point of this endpoint?
+                    */
                  ];
                 testApi(stack, api);
             });
